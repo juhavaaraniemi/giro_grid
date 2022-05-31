@@ -33,9 +33,18 @@ ui_radius = 12
 group_play = true
 backup = 0
 
+g = grid.connect()
+
 --
 -- INIT FUNCTIONS
 --
+
+function init_grid_variables()
+  g_brightness = 15
+  g_loop_selector = {y = 1}
+end
+
+
 function init_loop_variables()
   print("init loop variables")
   for i=1,6 do
@@ -285,8 +294,10 @@ function init()
   init_softcut()
   init_parameters()
   init_pset_callbacks()
+  init_grid_variables()
   clock.run(screen_redraw_clock)
   clock.run(master_clock)
+  grid_redraw()
 end
 
 --
@@ -440,6 +451,16 @@ function enc(n,d)
         params:delta(i.."rate",d)
       end
     end
+  end
+end
+
+function g.key(x,y,z)
+  if z == 1 then
+    if x == 1 and y < 7 then
+      g_loop_selector.y = y
+      selected_loop = g_loop_selector.y
+    end
+    grid_redraw()
   end
 end
 
@@ -703,4 +724,12 @@ function redraw()
   end
   
   screen.update()
+end
+
+function grid_redraw()
+  g:all(0)
+  for y = 1,6 do
+    g:led(1, g_loop_selector.y, 15)
+  end
+  g:refresh()
 end

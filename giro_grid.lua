@@ -40,8 +40,12 @@ g = grid.connect()
 --
 
 function init_grid_variables()
-  g_brightness = 15
   g_loop_selector = {y = 1}
+  g_loop_state = {}
+  for y=1,6 do
+    g_loop_state[y] = {x = 4}
+  end
+
 end
 
 
@@ -456,9 +460,18 @@ end
 
 function g.key(x,y,z)
   if z == 1 then
-    if x == 1 and y < 7 then
+    if x == 1 and y <= 6 then
       g_loop_selector.y = y
       selected_loop = g_loop_selector.y
+    elseif x >= 3 and x <= 4 and y <= 6 then
+      g_loop_state[y].x = x
+      g_loop_selector.y = y
+      selected_loop = g_loop_selector.y
+      if g_loop_state[y].x == 3 then
+        rec_press()
+      elseif g_loop_state[y].x == 4 then
+        stop_press()
+      end
     end
     grid_redraw()
   end
@@ -730,6 +743,7 @@ function grid_redraw()
   g:all(0)
   for y = 1,6 do
     g:led(1, g_loop_selector.y, 15)
+    g:led(g_loop_state[y].x ,y, 15)
   end
   g:refresh()
 end

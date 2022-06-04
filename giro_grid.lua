@@ -40,11 +40,24 @@ g = grid.connect()
 --
 
 function init_grid_variables()
-  g_loop_selector = {y = 1}
+  g_loop_select = {y = 1}
   g_loop_state = {}
+  g_level = {}
+  g_pan = {}
+  g_rate = {}
+  g_master = {}
+  g_group = {}
+  g_multiple = {}
   for y=1,6 do
     g_loop_state[y] = {x = 4}
+    g_level[y] = {x = 16}
+    g_pan[y] = {x = 11}
+    g_rate[y] = {x = 10}
+    g_master[y] = {x = 6}
+    g_group[y] = {x = 6}
+    g_multiple[y] = {x = 6}
   end
+  g_alt = {x = 1}
 
 end
 
@@ -461,16 +474,48 @@ end
 function g.key(x,y,z)
   if z == 1 then
     if x == 1 and y <= 6 then
-      g_loop_selector.y = y
-      selected_loop = g_loop_selector.y
+      g_loop_select.y = y
+      selected_loop = g_loop_select.y
     elseif x >= 3 and x <= 4 and y <= 6 then
       g_loop_state[y].x = x
-      g_loop_selector.y = y
-      selected_loop = g_loop_selector.y
+      g_loop_select.y = y
+      selected_loop = g_loop_select.y
       if g_loop_state[y].x == 3 then
         rec_press()
       elseif g_loop_state[y].x == 4 then
         stop_press()
+      end
+    elseif y == 8 and x <= 6 then
+      g_alt.x = x
+    elseif g_alt.x == 4 then
+      if x >= 6 and x <=16 and y <= 6 then
+        g_level[y].x = x
+        params:set(y.."level",(0.1*(x-6)))
+      end
+    elseif g_alt.x == 5 then
+      if x >= 6 and x <=16 and y <= 6 then
+        g_pan[y].x = x
+        params:set(y.."pan",(0.2*(x-11)))
+      end
+    elseif g_alt.x == 6 then
+      if x >= 6 and x <=11 and y <= 6 then
+        g_rate[y].x = x
+        params:set(y.."rate",(x-5))
+      end
+    elseif g_alt.x == 1 then
+      if x >= 6 and x <=11 and y <= 6 then
+        g_master[y].x = x
+        params:set(y.."master",(x-5))
+      end
+    elseif g_alt.x == 2 then
+      if x >= 6 and x <=11 and y <= 6 then
+        g_group[y].x = x
+        params:set(y.."group",(x-5))
+      end
+    elseif g_alt.x == 3 then
+      if x >= 6 and x <=13 and y <= 6 then
+        g_multiple[y].x = x
+        params:set(y.."multiple",(x-5))
       end
     end
     grid_redraw()
@@ -742,8 +787,22 @@ end
 function grid_redraw()
   g:all(0)
   for y = 1,6 do
-    g:led(1, g_loop_selector.y, 15)
+    g:led(1, g_loop_select.y, 15)
     g:led(g_loop_state[y].x ,y, 15)
+    if g_alt.x == 4 then
+      g:led(g_level[y].x, y, 15)
+    elseif g_alt.x == 5 then
+      g:led(g_pan[y].x, y, 15)
+    elseif g_alt.x == 6 then
+      g:led(g_rate[y].x, y, 15)
+    elseif g_alt.x == 1 then
+      g:led(g_master[y].x, y, 15)
+    elseif g_alt.x == 2 then
+      g:led(g_group[y].x, y, 15)
+    elseif g_alt.x == 3 then
+      g:led(g_multiple[y].x, y, 15)
+    end
   end
+  g:led(g_alt.x, 8, 15)
   g:refresh()
 end

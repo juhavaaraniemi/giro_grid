@@ -787,19 +787,39 @@ end
 function grid_redraw()
   g:all(0)
   for y = 1,6 do
+    g:led(1,y,4)
     g:led(1, g_loop_select.y, 15)
     g:led(g_loop_state[y].x ,y, 15)
     if g_alt.x == 4 then
+      for x=6,16 do
+        g:led(x,y,4)
+      end
       g:led(g_level[y].x, y, 15)
     elseif g_alt.x == 5 then
+      for x=6,16 do
+        g:led(x,y,4)
+      end
+      g:led(11,y,9)
       g:led(g_pan[y].x, y, 15)
     elseif g_alt.x == 6 then
+      for x=6,11 do
+        g:led(x,y,4)
+      end
       g:led(g_rate[y].x, y, 15)
     elseif g_alt.x == 1 then
+      for x=6,11 do
+        g:led(x,y,4)
+      end
       g:led(g_master[y].x, y, 15)
     elseif g_alt.x == 2 then
+      for x=6,11 do
+        g:led(x,y,4)
+      end
       g:led(g_group[y].x, y, 15)
     elseif g_alt.x == 3 then
+      for x=6,13 do
+        g:led(x,y,4)
+      end
       g:led(g_multiple[y].x, y, 15)
     end
   end

@@ -57,7 +57,7 @@ function init_grid_variables()
     g_group[y] = {x = 6}
     g_multiple[y] = {x = 6}
   end
-  g_alt = {x = 1}
+  g_alt = {x = 6}
 
 end
 
@@ -314,6 +314,7 @@ function init()
   init_grid_variables()
   clock.run(screen_redraw_clock)
   clock.run(master_clock)
+  clock.run(grid_redraw_clock)
   grid_redraw()
 end
 
@@ -388,6 +389,36 @@ function master_clock()
     clock_tick()
   end
 end
+
+function grid_redraw_clock()
+  while true do
+    clock.sleep(1/30) -- refresh at 30fps.
+    update_grid_variables()
+    grid_redraw()
+  end
+end
+
+function update_grid_variables()
+  for i=1,6 do
+    if loop[i].rec == 2 or loop[i].ovr == 2 then
+      g_loop_state[i].x = 2
+    elseif loop[i].play == 2 then
+      g_loop_state[i].x = 3
+    elseif loop[i].stop == 2 then
+      g_loop_state[i].x = 4
+    end
+    
+    g_master[i].x = params:get(i.."master")+5
+    g_group[i].x = params:get(i.."group")+5
+    g_multiple[i].x = params:get(i.."multiple")+5
+    g_level[i].x = math.floor(params:get(i.."level")*10)+6
+    g_pan[i].x = math.floor(params:get(i.."pan")*10)+11
+    g_rate[i].x = params:get(i.."rate")+5
+  end
+end
+
+    
+      
 
 function clock_tick()
   if loop[selected_loop].rec == 1 then
@@ -476,43 +507,47 @@ function g.key(x,y,z)
     if x == 1 and y <= 6 then
       g_loop_select.y = y
       selected_loop = g_loop_select.y
-    elseif x >= 3 and x <= 4 and y <= 6 then
+    elseif x >= 2 and x <= 5 and y <= 6 then
       g_loop_state[y].x = x
       g_loop_select.y = y
       selected_loop = g_loop_select.y
-      if g_loop_state[y].x == 3 then
+      if g_loop_state[y].x == 2 then
         rec_press()
+      elseif g_loop_state[y].x == 3 then
+        play_press()
       elseif g_loop_state[y].x == 4 then
         stop_press()
+      elseif g_loop_state[y].x == 5 then
+        clear_press()
       end
-    elseif y == 8 and x <= 6 then
+    elseif y == 8 and x >= 6 and x <= 11 then
       g_alt.x = x
-    elseif g_alt.x == 4 then
+    elseif g_alt.x == 9 then
       if x >= 6 and x <=16 and y <= 6 then
         g_level[y].x = x
         params:set(y.."level",(0.1*(x-6)))
       end
-    elseif g_alt.x == 5 then
+    elseif g_alt.x == 10 then
       if x >= 6 and x <=16 and y <= 6 then
         g_pan[y].x = x
         params:set(y.."pan",(0.2*(x-11)))
       end
-    elseif g_alt.x == 6 then
+    elseif g_alt.x == 11 then
       if x >= 6 and x <=11 and y <= 6 then
         g_rate[y].x = x
         params:set(y.."rate",(x-5))
       end
-    elseif g_alt.x == 1 then
+    elseif g_alt.x == 6 then
       if x >= 6 and x <=11 and y <= 6 then
         g_master[y].x = x
         params:set(y.."master",(x-5))
       end
-    elseif g_alt.x == 2 then
+    elseif g_alt.x == 7 then
       if x >= 6 and x <=11 and y <= 6 then
         g_group[y].x = x
         params:set(y.."group",(x-5))
       end
-    elseif g_alt.x == 3 then
+    elseif g_alt.x == 8 then
       if x >= 6 and x <=13 and y <= 6 then
         g_multiple[y].x = x
         params:set(y.."multiple",(x-5))
@@ -789,39 +824,45 @@ function grid_redraw()
   for y = 1,6 do
     g:led(1,y,4)
     g:led(1, g_loop_select.y, 15)
+    for x=2,5 do
+      g:led(x,y,4)
+    end
     g:led(g_loop_state[y].x ,y, 15)
-    if g_alt.x == 4 then
+    if g_alt.x == 9 then
       for x=6,16 do
         g:led(x,y,4)
       end
       g:led(g_level[y].x, y, 15)
-    elseif g_alt.x == 5 then
+    elseif g_alt.x == 10 then
       for x=6,16 do
         g:led(x,y,4)
       end
       g:led(11,y,9)
       g:led(g_pan[y].x, y, 15)
-    elseif g_alt.x == 6 then
+    elseif g_alt.x == 11 then
       for x=6,11 do
         g:led(x,y,4)
       end
       g:led(g_rate[y].x, y, 15)
-    elseif g_alt.x == 1 then
+    elseif g_alt.x == 6 then
       for x=6,11 do
         g:led(x,y,4)
       end
       g:led(g_master[y].x, y, 15)
-    elseif g_alt.x == 2 then
+    elseif g_alt.x == 7 then
       for x=6,11 do
         g:led(x,y,4)
       end
       g:led(g_group[y].x, y, 15)
-    elseif g_alt.x == 3 then
+    elseif g_alt.x == 8 then
       for x=6,13 do
         g:led(x,y,4)
       end
       g:led(g_multiple[y].x, y, 15)
     end
+  end
+  for x=6,11 do
+    g:led(x,8,4)
   end
   g:led(g_alt.x, 8, 15)
   g:refresh()

@@ -401,6 +401,9 @@ function grid_redraw_clock()
 end
 
 function update_grid_variables()
+  
+  g_loop_select.y = selected_loop
+  
   for i=1,6 do
     if loop[i].rec == 2 or loop[i].ovr == 2 or loop[i].play == 2 then
       g_loop_state[i].x = 2
@@ -879,5 +882,8 @@ function grid_redraw()
     g:led(x,8,4)
   end
   g:led(g_alt.x, 8, 15)
+  for x=1,4 do
+    g:led(x,8,4)
+  end
   g:refresh()
 end

@@ -40,6 +40,8 @@ g = grid.connect()
 --
 
 function init_grid_variables()
+  g_counter = 1
+  g_blink = true
   g_loop_select = {y = 1}
   g_loop_state = {}
   g_level = {}
@@ -49,7 +51,7 @@ function init_grid_variables()
   g_group = {}
   g_multiple = {}
   for y=1,6 do
-    g_loop_state[y] = {x = 4}
+    g_loop_state[y] = {x = 3}
     g_level[y] = {x = 16}
     g_pan[y] = {x = 11}
     g_rate[y] = {x = 10}
@@ -400,20 +402,25 @@ end
 
 function update_grid_variables()
   for i=1,6 do
-    if loop[i].rec == 2 or loop[i].ovr == 2 then
+    if loop[i].rec == 2 or loop[i].ovr == 2 or loop[i].play == 2 then
       g_loop_state[i].x = 2
-    elseif loop[i].play == 2 then
-      g_loop_state[i].x = 3
     elseif loop[i].stop == 2 then
-      g_loop_state[i].x = 4
+      g_loop_state[i].x = 3
     end
     
     g_master[i].x = params:get(i.."master")+5
     g_group[i].x = params:get(i.."group")+5
     g_multiple[i].x = params:get(i.."multiple")+5
     g_level[i].x = math.floor(params:get(i.."level")*10)+6
-    g_pan[i].x = math.floor(params:get(i.."pan")*10)+11
+    g_pan[i].x = math.floor((params:get(i.."pan")+1.1)*5)+6
     g_rate[i].x = params:get(i.."rate")+5
+  end
+  
+  if g_counter > 5 then
+    g_counter = 1
+    g_blink = not g_blink
+  else
+    g_counter = g_counter + 1
   end
 end
 
@@ -507,17 +514,15 @@ function g.key(x,y,z)
     if x == 1 and y <= 6 then
       g_loop_select.y = y
       selected_loop = g_loop_select.y
-    elseif x >= 2 and x <= 5 and y <= 6 then
+    elseif x >= 2 and x <= 4 and y <= 6 then
       g_loop_state[y].x = x
       g_loop_select.y = y
       selected_loop = g_loop_select.y
       if g_loop_state[y].x == 2 then
         rec_press()
       elseif g_loop_state[y].x == 3 then
-        play_press()
-      elseif g_loop_state[y].x == 4 then
         stop_press()
-      elseif g_loop_state[y].x == 5 then
+      elseif g_loop_state[y].x == 4 then
         clear_press()
       end
     elseif y == 8 and x >= 6 and x <= 11 then
@@ -824,10 +829,19 @@ function grid_redraw()
   for y = 1,6 do
     g:led(1,y,4)
     g:led(1, g_loop_select.y, 15)
-    for x=2,5 do
+    for x=2,4 do
       g:led(x,y,4)
     end
-    g:led(g_loop_state[y].x ,y, 15)
+    if loop[y].rec == 2 or loop[y].ovr == 2 then
+      g:led(g_loop_state[y].x ,y, g_blink and 15 or 4)
+    else
+      g:led(g_loop_state[y].x ,y, 15)
+    end
+    if loop[y].content then
+      g:led(4, y, 9)
+    else
+      g:led(4,y,4)
+    end
     if g_alt.x == 9 then
       for x=6,16 do
         g:led(x,y,4)

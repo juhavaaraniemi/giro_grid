@@ -1,10 +1,11 @@
--- giro
+-- Giro
+-- v1.0.2 @JulesV
+-- https://llllllll.co/t/giro/
 -- 
 -- (a)sync looping
 -- performance
 -- instrument
 --
--- 
 --    ▼ instructions below ▼
 --
 -- E1 select loop
@@ -38,32 +39,6 @@ g = grid.connect()
 --
 -- INIT FUNCTIONS
 --
-
-function init_grid_variables()
-  g_counter = 1
-  g_blink = true
-  g_loop_select = {y = 1}
-  g_loop_state = {}
-  g_level = {}
-  g_pan = {}
-  g_rate = {}
-  g_master = {}
-  g_group = {}
-  g_multiple = {}
-  for y=1,6 do
-    g_loop_state[y] = {x = 3}
-    g_level[y] = {x = 16}
-    g_pan[y] = {x = 11}
-    g_rate[y] = {x = 10}
-    g_master[y] = {x = 6}
-    g_group[y] = {x = 6}
-    g_multiple[y] = {x = 6}
-  end
-  g_alt = {x = 6}
-
-end
-
-
 function init_loop_variables()
   print("init loop variables")
   for i=1,6 do
@@ -144,11 +119,41 @@ function init_softcut()
   softcut.poll_start_phase()
 end
 
+function init_grid_variables()
+  g_counter = 1
+  g_blink = true
+  g_loop_select = {y = 1}
+  g_loop_state = {}
+  g_global_functions = {}
+  g_params = {}
+  g_level = {}
+  g_pan = {}
+  g_rate = {}
+  g_master = {}
+  g_group = {}
+  g_multiple = {}
+  g_alt = {x = 6}
+  for y=1,6 do
+    g_loop_state[y] = {x = 3}
+    g_params[y] = {x = 6}
+    g_level[y] = {x = 16}
+    g_pan[y] = {x = 11}
+    g_rate[y] = {x = 10}
+    g_master[y] = {x = 6}
+    g_group[y] = {x = 6}
+    g_multiple[y] = {x = 6}
+  end
+  for x=1,4 do
+    g_global_functions[x] = false
+  end
+  
+end
+
 function init_parameters()
   print("init_parameters")
   params:add_separator("GIRO - LOOPS")
   for i=1,6 do
-    params:add_group("loop "..i,8)
+    params:add_group("loop "..i,6)
     params:add {
       type="number",
       id=i.."master",
@@ -234,17 +239,20 @@ function init_parameters()
         print(i.."rate"..rates[value])
       end
     }
-    params:add {type="control",id=i.."rec_level",name="rec level",controlspec=controlspec.new(0,1.0,'lin',0.01,1.0,''),
-      action=function(value)
-        print(i.."rec level "..value)
-      end
-    }
-    params:add {type="control",id=i.."pre_level",name="pre level",controlspec=controlspec.new(0,1.0,'lin',0.01,1.0,''),
-      action=function(value)
-        print(i.."pre level "..value)
-      end
-    }
   end
+  
+  params:add_separator("GIRO - RECORDING")
+  params:add {type="control",id="rec_level",name="rec level",controlspec=controlspec.new(0,1.0,'lin',0.01,1.0,''),
+    action=function(value)
+      print("rec level "..value)
+    end
+  }
+  params:add {type="control",id="pre_level",name="loop preserve on ovr",controlspec=controlspec.new(0,1.0,'lin',0.01,1.0,''),
+    action=function(value)
+      print("pre level "..value)
+    end
+  }
+  
   params:bang()
 
   params:add_separator("GIRO - BUTTONS")
@@ -268,9 +276,7 @@ function init_parameters()
   }
   params:add {type="binary",id="stop_all",name="stop all",behavior="toggle",
     action=function()
-      for i=1,6 do
-        stop_state(i)
-      end
+      stop_all_press()
     end
   }
   params:add {type="binary",id="clear",name="clear",behavior="toggle",
@@ -310,14 +316,13 @@ function init()
   norns.enc.sens(1,5)
   norns.enc.sens(3,5)
   init_loop_variables()
+  init_grid_variables()
   init_softcut()
   init_parameters()
   init_pset_callbacks()
-  init_grid_variables()
   clock.run(screen_redraw_clock)
-  clock.run(master_clock)
   clock.run(grid_redraw_clock)
-  grid_redraw()
+  clock.run(master_clock)
 end
 
 --
@@ -370,6 +375,7 @@ function init_pset_callbacks()
           softcut.loop_end(i,loop[i].loop_start+(loop[params:get(i.."master")].length * params:get(i.."multiple")))
         end
       end
+    params:bang()
     end
   end
   
@@ -385,13 +391,6 @@ function screen_redraw_clock()
   end
 end
 
-function master_clock()
-  while true do
-    clock.sleep(CLOCK_INTERVAL)
-    clock_tick()
-  end
-end
-
 function grid_redraw_clock()
   while true do
     clock.sleep(1/30) -- refresh at 30fps.
@@ -400,35 +399,12 @@ function grid_redraw_clock()
   end
 end
 
-function update_grid_variables()
-  
-  g_loop_select.y = selected_loop
-  
-  for i=1,6 do
-    if loop[i].rec == 2 or loop[i].ovr == 2 or loop[i].play == 2 then
-      g_loop_state[i].x = 2
-    elseif loop[i].stop == 2 then
-      g_loop_state[i].x = 3
-    end
-    
-    g_master[i].x = params:get(i.."master")+5
-    g_group[i].x = params:get(i.."group")+5
-    g_multiple[i].x = params:get(i.."multiple")+5
-    g_level[i].x = math.floor(params:get(i.."level")*10)+6
-    g_pan[i].x = math.floor((params:get(i.."pan")+1.1)*5)+6
-    g_rate[i].x = params:get(i.."rate")+5
-  end
-  
-  if g_counter > 5 then
-    g_counter = 1
-    g_blink = not g_blink
-  else
-    g_counter = g_counter + 1
+function master_clock()
+  while true do
+    clock.sleep(CLOCK_INTERVAL)
+    clock_tick()
   end
 end
-
-    
-      
 
 function clock_tick()
   if loop[selected_loop].rec == 1 then
@@ -513,6 +489,9 @@ function enc(n,d)
 end
 
 function g.key(x,y,z)
+  if y == 8 then
+    g_global_functions[x] = z == 1 and true or false
+  end
   if z == 1 then
     if x == 1 and y <= 6 then
       g_loop_select.y = y
@@ -530,6 +509,16 @@ function g.key(x,y,z)
       end
     elseif y == 8 and x >= 6 and x <= 11 then
       g_alt.x = x
+    elseif y == 8 and x <= 4 then
+      if x == 1 then
+        group_play = not group_play
+      elseif x == 2 then
+        undo_press()
+      elseif x == 3 then
+        stop_all_press()
+      elseif x == 4 then
+        print("still thinking about")
+      end
     elseif g_alt.x == 9 then
       if x >= 6 and x <=16 and y <= 6 then
         g_level[y].x = x
@@ -561,7 +550,6 @@ function g.key(x,y,z)
         params:set(y.."multiple",(x-5))
       end
     end
-    grid_redraw()
   end
 end
 
@@ -571,7 +559,7 @@ end
 function rec_state(selected)
   softcut.buffer_clear_region_channel(loop[selected].buffer,loop[selected].loop_start,MAX_LOOP_LENGTH,0.00,0)
   softcut.level(selected,params:get(selected.."level"))
-  softcut.rec_level(selected,1.0)
+  softcut.rec_level(selected,params:get("rec_level"))
   softcut.pre_level(selected,0.0)
   loop[selected].content = true
   loop[selected].rec = 2
@@ -593,8 +581,8 @@ end
 function ovr_state(selected)
   backup_loop(selected)
   softcut.level(selected,params:get(selected.."level"))
-  softcut.rec_level(selected,params:get(selected.."rec_level"))
-  softcut.pre_level(selected,params:get(selected.."pre_level"))
+  softcut.rec_level(selected,params:get("rec_level"))
+  softcut.pre_level(selected,params:get("pre_level"))
   loop[selected].content = true
   loop[selected].rec = 0
   loop[selected].play = 0
@@ -644,6 +632,12 @@ end
 
 function stop_press()
   loop[selected_loop].stop = 1
+end
+
+function stop_all_press()
+  for i=1,6 do
+    stop_state(i)
+  end
 end
 
 function clear_press()
@@ -742,6 +736,32 @@ end
 function restore_loop(selected)
   softcut.buffer_copy_mono(loop[selected].buffer,loop[selected].buffer,1+3*MAX_LOOP_LENGTH,loop[selected].loop_start,MAX_LOOP_LENGTH,0.00,0.0,0)
   backup = 0
+end
+
+function update_grid_variables()
+  g_loop_select.y = selected_loop
+  
+  for i=1,6 do
+    if loop[i].rec == 2 or loop[i].ovr == 2 or loop[i].play == 2 then
+      g_loop_state[i].x = 2
+    elseif loop[i].stop == 2 then
+      g_loop_state[i].x = 3
+    end
+    
+    g_master[i].x = params:get(i.."master")+5
+    g_group[i].x = params:get(i.."group")+5
+    g_multiple[i].x = params:get(i.."multiple")+5
+    g_level[i].x = math.floor(params:get(i.."level")*10)+6
+    g_pan[i].x = math.floor((params:get(i.."pan")+1.1)*5)+6
+    g_rate[i].x = params:get(i.."rate")+5
+  end
+  
+  if g_counter > 5 then
+    g_counter = 1
+    g_blink = not g_blink
+  else
+    g_counter = g_counter + 1
+  end
 end
 
 --
@@ -884,6 +904,10 @@ function grid_redraw()
   g:led(g_alt.x, 8, 15)
   for x=1,4 do
     g:led(x,8,4)
+    if g_global_functions[x] then
+      g:led(x,8,15)
+    end
   end
+
   g:refresh()
 end

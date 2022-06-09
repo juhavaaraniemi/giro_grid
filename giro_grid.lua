@@ -29,6 +29,7 @@ shifted = false
 loop = {}
 selected_loop = 1
 screen_refresh = true
+grid_dirty = true
 rates = {-2.0,-1.0,-0.5,0.5,1.0,2.0}
 ui_radius = 12
 group_play = true
@@ -191,6 +192,7 @@ function init_parameters()
             params.params[mult_look].max = 8
           end
         end
+        grid_dirty = true
       end
     }
     params:add {
@@ -202,6 +204,7 @@ function init_parameters()
       default=1,
       action=function(value)
         print(i.."loop group: "..value)
+        grid_dirty = true
       end
     }
     params:add {
@@ -217,6 +220,7 @@ function init_parameters()
           softcut.loop_end(i,loop[i].loop_start+loop[i].length)
         end
         print(i.."multiple: "..value)
+        grid_dirty = true
       end
     }    
     params:add {type="control",id=i.."level",name="level",controlspec=controlspec.new(0,1.0,'db',0.01,1.0,''),
@@ -225,18 +229,21 @@ function init_parameters()
           softcut.level(i,value)
         end
         print(i.."level "..value)
+        grid_dirty = true
       end
     }
     params:add {type="control",id=i.."pan",name="pan",controlspec=controlspec.new(-1,1.0,'lin',0.01,0.0,''),
       action=function(value)
         softcut.pan(i,value)
         print(i.."pan"..value)
+        grid_dirty = true
       end
     }
     params:add {type="option",id=i.."rate",name="rate",options=rates,default=5,
       action=function(value)
         softcut.rate(i,rates[value])
         print(i.."rate"..rates[value])
+        grid_dirty = true
       end
     }
   end
@@ -395,7 +402,10 @@ function grid_redraw_clock()
   while true do
     clock.sleep(1/30) -- refresh at 30fps.
     update_grid_variables()
-    grid_redraw()
+    if grid_dirty then
+      grid_redraw()
+      grid_dirty = false
+    end
   end
 end
 
@@ -468,6 +478,7 @@ function key(n,z)
   elseif n == 3 and z == 1 then
     stop_press()
   end
+  grid_dirty = true
 end
 
 function enc(n,d)
@@ -486,6 +497,7 @@ function enc(n,d)
       end
     end
   end
+  grid_dirty = true
 end
 
 function g.key(x,y,z)
@@ -551,6 +563,7 @@ function g.key(x,y,z)
       end
     end
   end
+  grid_dirty = true
 end
 
 --
@@ -566,6 +579,7 @@ function rec_state(selected)
   loop[selected].play = 0
   loop[selected].ovr = 0
   loop[selected].stop = 0
+  grid_dirty = true
 end
 
 function play_state(selected)
@@ -576,6 +590,7 @@ function play_state(selected)
   loop[selected].play = 2
   loop[selected].ovr = 0
   loop[selected].stop = 0
+  grid_dirty = true
 end
 
 function ovr_state(selected)
@@ -588,6 +603,7 @@ function ovr_state(selected)
   loop[selected].play = 0
   loop[selected].ovr = 2
   loop[selected].stop = 0
+  grid_dirty = true
 end
 
 function stop_state(selected)
@@ -598,11 +614,13 @@ function stop_state(selected)
   loop[selected].play = 0
   loop[selected].ovr = 0
   loop[selected].stop = 2
+  grid_dirty = true
 end
 
 function clear_state(selected)
   softcut.buffer_clear_region_channel(loop[selected].buffer,loop[selected].loop_start,MAX_LOOP_LENGTH,0.00,0)
   loop[selected].content = false
+  grid_dirty = true
 end
 
 function rec_press()
@@ -744,6 +762,7 @@ function update_grid_variables()
   for i=1,6 do
     if loop[i].rec == 2 or loop[i].ovr == 2 or loop[i].play == 2 then
       g_loop_state[i].x = 2
+      grid_dirty = true
     elseif loop[i].stop == 2 then
       g_loop_state[i].x = 3
     end
@@ -755,6 +774,8 @@ function update_grid_variables()
     g_pan[i].x = math.floor((params:get(i.."pan")+1.1)*5)+6
     g_rate[i].x = params:get(i.."rate")+5
   end
+  
+  g_global_functions[1] = group_play
   
   if g_counter > 5 then
     g_counter = 1

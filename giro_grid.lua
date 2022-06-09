@@ -382,7 +382,6 @@ function init_pset_callbacks()
           softcut.loop_end(i,loop[i].loop_start+(loop[params:get(i.."master")].length * params:get(i.."multiple")))
         end
       end
-    params:bang()
     end
   end
   
@@ -790,6 +789,7 @@ end
 --
 function redraw()
   screen.clear()
+  
   --  group play
   if group_play then
     screen.level(15)
@@ -864,7 +864,6 @@ function redraw()
     screen.rect(loop[i].ui_x-16,loop[i].ui_y+13-params:get(i.."level")*26,3,1)
     screen.fill()
   end
-  
   screen.update()
 end
 

@@ -840,9 +840,14 @@ function redraw()
     screen.stroke()
     if loop[i].play == 2 or loop[i].ovr == 2 then
       screen.level(15)
-      screen.move(loop[i].ui_x+ui_radius,loop[i].ui_y)
-      screen.arc(loop[i].ui_x,loop[i].ui_y,ui_radius,0,2*math.pi*(loop[i].position-loop[i].loop_start)/loop[i].length)
+      screen.arc(loop[i].ui_x,loop[i].ui_y,ui_radius,-math.pi/2,2*math.pi*(loop[i].position-loop[i].loop_start)/loop[i].length-math.pi/2)
       screen.stroke()
+    end
+    --loop progress when stopped
+    if loop[i].stop == 2 and loop[params:get(i.."master")].play == 2 and i == selected_loop then
+      screen.level(15)
+      screen.pixel(loop[i].ui_x-0.5+ui_radius*math.sin(2*math.pi*(loop[i].position-loop[i].loop_start)/loop[i].length), loop[i].ui_y-0.5-ui_radius*math.cos(2*math.pi*(loop[i].position-loop[i].loop_start)/loop[i].length))
+      screen.fill()
     end
     --pan
     screen.level(15)

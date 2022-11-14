@@ -33,6 +33,7 @@ grid_dirty = true
 rates = {-2.0,-1.0,-0.5,0.5,1.0,2.0}
 ui_radius = 12
 group_play = true
+cut_mode = false
 backup = 0
 
 g = grid.connect()
@@ -51,6 +52,10 @@ function init_loop_variables()
     loop[i].length = MAX_LOOP_LENGTH
     loop[i].content = false
     loop[i].position = 0.00
+    loop[i].slice = {}
+    for j=1,17 do
+      loop[i].slice[j] = 0.00
+    end
   end
   
   loop[1].loop_start = 1
@@ -147,7 +152,6 @@ function init_grid_variables()
   for x=1,4 do
     g_global_functions[x] = false
   end
-  
 end
 
 function init_parameters()
@@ -300,12 +304,16 @@ function init_parameters()
   }
   params:add {type="binary",id="next",name="next loop",behavior="toggle",
     action=function()
-      selected_loop = selected_loop+1
+      if selected_loop < 6 then
+        selected_loop = selected_loop+1
+      end
     end
   }
   params:add {type="binary",id="prev",name="previous loop",behavior="toggle",
     action=function()
-      selected_loop = selected_loop-1
+      if selected_loop > 1 then
+        selected_loop = selected_loop-1
+      end
     end
   }
   params:add {type="binary",id="group_play",name="group play",behavior="toggle",
@@ -367,6 +375,7 @@ function init_pset_callbacks()
       softcut.buffer_clear()
 
       for i=1,6 do
+        loop[i].content = false
         loop_file = PATH..pset_name.."_loop"..i..".wav"
         if util.file_exists(loop_file) then
           print(loop_file.." found")
@@ -410,7 +419,8 @@ end
 
 function master_clock()
   while true do
-    clock.sleep(CLOCK_INTERVAL)
+    --clock.sleep(CLOCK_INTERVAL)
+    clock.sync(4)
     clock_tick()
   end
 end
@@ -504,61 +514,75 @@ function g.key(x,y,z)
     g_global_functions[x] = z == 1 and true or false
   end
   if z == 1 then
-    if x == 1 and y <= 6 then
-      g_loop_select.y = y
-      selected_loop = g_loop_select.y
-    elseif x >= 2 and x <= 4 and y <= 6 then
-      g_loop_state[y].x = x
-      g_loop_select.y = y
-      selected_loop = g_loop_select.y
-      if g_loop_state[y].x == 2 then
-        rec_press()
-      elseif g_loop_state[y].x == 3 then
-        stop_press()
-      elseif g_loop_state[y].x == 4 then
-        clear_press()
+    
+    --cut mode
+    if cut_mode and y <= 6 then
+      selected_loop = y
+      if loop[selected_loop].play == 0 then
+        play_press()
       end
-    elseif y == 8 and x >= 6 and x <= 11 then
-      g_alt.x = x
-    elseif y == 8 and x <= 4 then
-      if x == 1 then
-        group_play = not group_play
-      elseif x == 2 then
-        undo_press()
-      elseif x == 3 then
-        stop_all_press()
-      elseif x == 4 then
-        print("still thinking about")
-      end
-    elseif g_alt.x == 9 then
-      if x >= 6 and x <=16 and y <= 6 then
-        g_level[y].x = x
-        params:set(y.."level",(0.1*(x-6)))
-      end
-    elseif g_alt.x == 10 then
-      if x >= 6 and x <=16 and y <= 6 then
-        g_pan[y].x = x
-        params:set(y.."pan",(0.2*(x-11)))
-      end
-    elseif g_alt.x == 11 then
-      if x >= 6 and x <=11 and y <= 6 then
-        g_rate[y].x = x
-        params:set(y.."rate",(x-5))
-      end
-    elseif g_alt.x == 6 then
-      if x >= 6 and x <=11 and y <= 6 then
-        g_master[y].x = x
-        params:set(y.."master",(x-5))
-      end
-    elseif g_alt.x == 7 then
-      if x >= 6 and x <=11 and y <= 6 then
-        g_group[y].x = x
-        params:set(y.."group",(x-5))
-      end
-    elseif g_alt.x == 8 then
-      if x >= 6 and x <=13 and y <= 6 then
-        g_multiple[y].x = x
-        params:set(y.."multiple",(x-5))
+      softcut.position(y,loop[y].slice[x])
+    else
+        
+    --looper mode
+      if x == 1 and y <= 6 then
+        g_loop_select.y = y
+        selected_loop = g_loop_select.y
+      elseif x >= 2 and x <= 4 and y <= 6 then
+        g_loop_state[y].x = x
+        g_loop_select.y = y
+        selected_loop = g_loop_select.y
+        if g_loop_state[y].x == 2 then
+          rec_press()
+        elseif g_loop_state[y].x == 3 then
+          stop_press()
+        elseif g_loop_state[y].x == 4 then
+          clear_press()
+        end
+      elseif y == 8 and x >= 6 and x <= 11 then
+        g_alt.x = x
+      elseif y == 8 and x <= 4 then
+        if x == 1 then
+          group_play = not group_play
+        elseif x == 2 then
+          undo_press()
+        elseif x == 3 then
+          stop_all_press()
+        elseif x == 4 then
+          print("still thinking about")
+        end
+      elseif y == 8 and x == 16 then
+          cut_mode = not cut_mode
+      elseif g_alt.x == 9 then
+        if x >= 6 and x <=16 and y <= 6 then
+          g_level[y].x = x
+          params:set(y.."level",(0.1*(x-6)))
+        end
+      elseif g_alt.x == 10 then
+        if x >= 6 and x <=16 and y <= 6 then
+          g_pan[y].x = x
+          params:set(y.."pan",(0.2*(x-11)))
+        end
+      elseif g_alt.x == 11 then
+        if x >= 6 and x <=11 and y <= 6 then
+          g_rate[y].x = x
+          params:set(y.."rate",(x-5))
+        end
+      elseif g_alt.x == 6 then
+        if x >= 6 and x <=11 and y <= 6 then
+          g_master[y].x = x
+          params:set(y.."master",(x-5))
+        end
+      elseif g_alt.x == 7 then
+        if x >= 6 and x <=11 and y <= 6 then
+          g_group[y].x = x
+          params:set(y.."group",(x-5))
+        end
+      elseif g_alt.x == 8 then
+        if x >= 6 and x <=13 and y <= 6 then
+          g_multiple[y].x = x
+          params:set(y.."multiple",(x-5))
+        end
       end
     end
   end
@@ -717,6 +741,11 @@ function sync_loop_ends_to_master(selected)
       calc_multiple(i)
       loop[i].length = master_length * params:get(i.."multiple")
       softcut.loop_end(i,loop[i].loop_start+master_length*params:get(i.."multiple"))
+      print("loop"..i.." start: "..loop[i].loop_start)
+      for j=1,17 do
+        loop[i].slice[j] = loop[i].loop_start + (j-1) * math.floor(loop[i].length / 16*100)/100
+        print("loop"..i.." slice"..j.." :"..loop[i].slice[j])
+      end
     end
   end
 end
@@ -874,65 +903,84 @@ end
 
 function grid_redraw()
   g:all(0)
-  for y = 1,6 do
-    g:led(1,y,4)
-    g:led(1, g_loop_select.y, 15)
-    for x=2,4 do
-      g:led(x,y,4)
-    end
-    if loop[y].rec == 2 or loop[y].ovr == 2 then
-      g:led(g_loop_state[y].x ,y, g_blink and 15 or 4)
-    else
-      g:led(g_loop_state[y].x ,y, 15)
-    end
-    if loop[y].content then
-      g:led(4, y, 9)
-    else
-      g:led(4,y,4)
-    end
-    if g_alt.x == 9 then
-      for x=6,16 do
-        g:led(x,y,4)
-      end
-      g:led(g_level[y].x, y, 15)
-    elseif g_alt.x == 10 then
-      for x=6,16 do
-        g:led(x,y,4)
-      end
-      g:led(11,y,9)
-      g:led(g_pan[y].x, y, 15)
-    elseif g_alt.x == 11 then
-      for x=6,11 do
-        g:led(x,y,4)
-      end
-      g:led(g_rate[y].x, y, 15)
-    elseif g_alt.x == 6 then
-      for x=6,11 do
-        g:led(x,y,4)
-      end
-      g:led(g_master[y].x, y, 15)
-    elseif g_alt.x == 7 then
-      for x=6,11 do
-        g:led(x,y,4)
-      end
-      g:led(g_group[y].x, y, 15)
-    elseif g_alt.x == 8 then
-      for x=6,13 do
-        g:led(x,y,4)
-      end
-      g:led(g_multiple[y].x, y, 15)
-    end
-  end
-  for x=6,11 do
-    g:led(x,8,4)
-  end
-  g:led(g_alt.x, 8, 15)
-  for x=1,4 do
-    g:led(x,8,4)
-    if g_global_functions[x] then
-      g:led(x,8,15)
-    end
-  end
 
+  -- cut mode
+  if cut_mode then
+    g:led(16,8,15)
+  
+    for i=1,6 do
+      if loop[i].play == 2 then
+        for j=1,16 do
+          if loop[i].position >= loop[i].slice[j] and loop[i].position < loop[i].slice[j+1] then
+            g:led(j,i,15)
+          end
+        end
+      end
+    end
+    
+  -- looper mode
+  else
+    g:led(16,8,4)
+
+    for y = 1,6 do
+      g:led(1,y,4)
+      g:led(1, g_loop_select.y, 15)
+      for x=2,4 do
+        g:led(x,y,4)
+      end
+      if loop[y].rec == 2 or loop[y].ovr == 2 then
+        g:led(g_loop_state[y].x ,y, g_blink and 15 or 4)
+      else
+        g:led(g_loop_state[y].x ,y, 15)
+      end
+      if loop[y].content then
+        g:led(4, y, 9)
+      else
+        g:led(4,y,4)
+      end
+      if g_alt.x == 9 then
+        for x=6,16 do
+          g:led(x,y,4)
+        end
+        g:led(g_level[y].x, y, 15)
+      elseif g_alt.x == 10 then
+        for x=6,16 do
+          g:led(x,y,4)
+        end
+        g:led(11,y,9)
+        g:led(g_pan[y].x, y, 15)
+      elseif g_alt.x == 11 then
+        for x=6,11 do
+          g:led(x,y,4)
+        end
+        g:led(g_rate[y].x, y, 15)
+      elseif g_alt.x == 6 then
+        for x=6,11 do
+          g:led(x,y,4)
+        end
+        g:led(g_master[y].x, y, 15)
+      elseif g_alt.x == 7 then
+        for x=6,11 do
+          g:led(x,y,4)
+        end
+        g:led(g_group[y].x, y, 15)
+      elseif g_alt.x == 8 then
+        for x=6,13 do
+          g:led(x,y,4)
+        end
+        g:led(g_multiple[y].x, y, 15)
+      end
+    end
+    for x=6,11 do
+      g:led(x,8,4)
+    end
+    g:led(g_alt.x, 8, 15)
+    for x=1,4 do
+      g:led(x,8,4)
+      if g_global_functions[x] then
+        g:led(x,8,15)
+      end
+    end
+  end
   g:refresh()
 end
